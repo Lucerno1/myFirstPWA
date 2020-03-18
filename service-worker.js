@@ -1,4 +1,4 @@
-const cacheName = "cache1";
+const cacheName = "cache2";
 const appFiles = [
     "/manifest.json",
     "/js/scripts.js",
@@ -57,5 +57,52 @@ self.addEventListener("fetch", (fetching) => {
 });
 
 self.addEventListener("push", (pushing) => {
+    
+    
+    if (pushing.data) {
+        pushdata = JSON.parse(pushing.data.text());
+        console.log("Service Worker: I received this:", pushdata);
+        if ((pushdata["title"] != "") && (pushdata["message"] != "")) {
+            const options = {
+                body: pushdata["message"]
+            }
+            self.registration.showNotification(pushdata["title"], options);
+            console.log("Service Worker: I made a notification for the user");
+        } else {
+            console.log("Service Worker: I didn't make a notification for the user, not all the info was there :(");
+        }
+    }
+
+    
     console.log("Service Worker: I received some push data, but because I am still very simple I don't know what to do with it :(");
 })
+
+
+
+//Asking for permission with the Notification API
+if (typeof Notification !== typeof undefined) { //First check if the API is available in the browser
+    Notification.requestPermission().then(function (result) {
+        //If accepted, then save subscriberinfo in database
+        if (result === "granted") {
+            console.log("Browser: User accepted receiving notifications, save as subscriber data!");
+            navigator.serviceWorker.ready.then(function (serviceworker) { //When the Service Worker is ready, generate the subscription with our Serice Worker's pushManager and save it to our list
+                const VAPIDPublicKey = "BPKwxO6GiIh3enjXrV5yNf3g34HImk9tM9rYKogNXwlv-Ae-x5pfOyfC0afE9X60pAnK6LLy0WGsCaZ8fULsWIY"; // Fill in your VAPID publicKey here
+                const options = {
+                    applicationServerKey: VAPIDPublicKey,
+                    userVisibleOnly: true
+                } //Option userVisibleOnly is neccesary for Chrome
+                serviceworker.pushManager.subscribe(options).then((subscription) => {
+                    //POST the generated subscription to our saving script (this needs to happen server-side, (client-side) JavaScript can't write files or databases)
+                    let subscriberFormData = new FormData();
+                    subscriberFormData.append("json", JSON.stringify(subscription));
+                    fetch("data/saveSubscription.php", {
+                        method: "POST",
+                        body: subscriberFormData
+                    });
+                });
+            });
+        }
+    }).catch((error) => {
+        console.log(error);
+    });
+}
