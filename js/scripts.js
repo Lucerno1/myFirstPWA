@@ -40,3 +40,32 @@ if (typeof Notification !== typeof undefined) { //First check if the API is avai
         console.log(error);
     });
 }
+
+
+// Script for the custom install button
+// It disables the default isntall pop up bar and shows the custom install button
+
+let installPrompt; //Variable to store the install action in
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault(); //Prevent the event (this prevents the default bar to show up)
+    installPrompt = event; //Install event is stored for triggering it later
+    
+   document.getElementById("installButton").style.visibility = "visible"; //...do something here to show your install button
+});
+
+//onclick function for the custom install button
+
+function installPWA(){
+
+    //Recognize the install variable from before?
+    installPrompt.prompt();
+    document.getElementById("installButton").style.visibility = "hidden"; //..Put code here that hides your install button
+    installPrompt.userChoice.then((choiceResult) => {
+        document.getElementById("installButton").style.visibility = "hidden"; //Hide the install button here again
+        if (choiceResult.outcome !== "accepted") {
+            document.getElementById("installButton").style.visibility = "visible";
+        }
+        installPrompt = null;
+    });
+
+}
